@@ -25,7 +25,7 @@ class FolderFlow implements Flow {
       extension?: string;
     },
   ) {
-    this.id = `FolderFlow:${this.config.source}`;
+    this.id = `FolderFlow:${this.config.source}\#.${config.extension}`;
   }
 
   async execute(): Promise<
