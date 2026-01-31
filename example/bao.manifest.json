@@ -6,10 +6,10 @@
       "assets/images"
     ],
     "FolderFlow:assets/fonts": [
+      "assets/fonts/FontAwesome.otf",
       "assets/fonts/fontawesome-webfont.woff",
       "assets/fonts/fontawesome-webfont.svg",
       "assets/fonts/fontawesome-webfont.eot",
-      "assets/fonts/FontAwesome.otf",
       "assets/fonts/fontawesome-webfont.woff2",
       "assets/fonts/fontawesome-webfont.ttf"
     ],
@@ -17,44 +17,5 @@
       "assets/favicon.ico"
     ]
   },
-  "steps": [
-    {
-      "runner": {
-        "className": "CopyRunner"
-      },
-      "flow": {
-        "className": "FolderFlow",
-        "config": {
-          "source": "assets/images",
-          "dest": "build/images"
-        }
-      }
-    },
-    {
-      "runner": {
-        "className": "CopyRunner"
-      },
-      "flow": {
-        "className": "FolderFlow",
-        "config": {
-          "source": "assets/fonts",
-          "dest": "build/fonts",
-          "expand": true
-        }
-      }
-    },
-    {
-      "runner": {
-        "className": "CopyRunner"
-      },
-      "flow": {
-        "className": "FileFlow",
-        "config": {
-          "source": "assets/favicon.ico",
-          "dest": "build/favicon.ico"
-        }
-      }
-    }
-  ],
   "tmpPath": "./.bao_tmp"
 }

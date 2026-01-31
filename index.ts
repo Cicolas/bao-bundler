@@ -1,5 +1,5 @@
 import { $ } from 'bun';
-import { cp } from 'node:fs/promises';
+import { cp, mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 
 const TMP_PATH = './.bao_tmp';
@@ -135,55 +135,55 @@ class CopyRunner implements Runner {
   }
 }
 
-// Source - https://stackoverflow.com/a/77588125
-// Posted by hjkatz
-// Retrieved 2026-01-31, License - CC BY-SA 4.0
-
-export type Constructor<T = any> = new (...args: any[]) => T;
-
 class Project {
   dependencies: Record<string, string> = {};
   flows: Record<string, Set<string>> = {};
-  steps: { runner: Runner; flow: Flow }[] = [];
 
   constructor(
     public name: string,
-    config?: {
-      tmpPath?: string;
-      dependencies?: Record<string, string>;
-      flows?: Record<string, Set<string>>;
-      steps?: { runner: Runner; flow: Flow }[];
-    },
+    private steps: { runner: Runner; flow: Flow }[] = [],
   ) {
-    if (config) {
-      if (config.dependencies) {
-        this.dependencies = config.dependencies;
-      }
-      if (config.flows) {
-        this.flows = config.flows;
-      }
-      if (config.steps) {
-        this.steps = config.steps;
-      }
-    }
   }
 
   async build(): Promise<void> {
     console.log(`Building project: ${this.name}`);
+    try {
+      await this.loadFromManifest();
+    } catch (err) {
+      if (err instanceof Error && err.message === "manifestFileNotfound") {
+        console.warn('no manifest file were found');
+      } else {
+        throw err;
+      }
+    }
 
-    await $`rm -rf ${TMP_PATH}`;
-    await $`mkdir -p ${TMP_PATH}/${ASSETS_PATH}`;
-    await $`cp -r ${ASSETS_PATH}/* ${TMP_PATH}/${ASSETS_PATH}/`;
+
+    await rm(`../${TMP_PATH}`, {
+      recursive: true,
+      force: true
+    });
+    await mkdir(`${TMP_PATH}/${ASSETS_PATH}`, {
+      recursive: true,
+    });
+    await cp(`${ASSETS_PATH}`, `${TMP_PATH}/${ASSETS_PATH}/`, {
+      recursive: true,
+    });
 
     process.chdir(TMP_PATH);
 
     for (const { runner, flow } of this.steps) {
       await this.executeRunner(runner, flow);
     }
-
-    await $`mkdir -p ../${BUILD_PATH}`;
-    await $`cp -r ${BUILD_PATH}/* ../${BUILD_PATH}`;
+    
     process.chdir('./..');
+    await rm(`${BUILD_PATH}`, {
+      recursive: true,
+      force: true
+    });
+    await mkdir(`${BUILD_PATH}`);
+    await cp(`${TMP_PATH}/${BUILD_PATH}`, `${BUILD_PATH}/`, {
+      recursive: true,
+    });
 
     await this.saveToManifest();
   }
@@ -206,10 +206,7 @@ class Project {
     await runner.run(files, destPath);
   }
 
-  static async loadFromManifest(config: {
-    runners: Constructor[];
-    flows: Constructor[];
-  }): Promise<Project> {
+  async loadFromManifest() {
     // check for bao.manifest.json in the current directory
     const manifestFile = Bun.file('./bao.manifest.json');
     if (!(await manifestFile.exists())) {
@@ -217,37 +214,8 @@ class Project {
     }
     const manifest = await manifestFile.json();
 
-    manifest.steps = manifest.steps.map((s: any) => {
-      return {
-        runner: new (
-          config.runners.find(
-            (func) => func.prototype.constructor.name === s.runner.className,
-          ) ??
-          (() => {
-            throw new Error(
-              `could not find '${s.runner.className}' on 'config.runners', perhaps '${s.runner.className}' is not defined on your config?`,
-            );
-          })()
-        )(s.runner.config),
-        flow: new (
-          config.flows.find(
-            (func) => func.prototype.constructor.name === s.flow.className,
-          ) ??
-          (() => {
-            throw new Error(
-              `could not find '${s.flow.className}' on 'config.flows', perhaps '${s.flow.className}' is not defined on your config?`,
-            );
-          })()
-        )(s.flow.config),
-      };
-    });
-
-    return new Project(manifest.name, {
-      dependencies: manifest.dependencies,
-      flows: manifest.flows,
-      steps: manifest.steps,
-      tmpPath: manifest.tmpPath,
-    });
+    this.dependencies = manifest.dependencies;
+    this.flows = manifest.flows;
   }
 
   async saveToManifest(): Promise<void> {
@@ -266,16 +234,6 @@ class Project {
             Array.from(value),
           ]),
         ),
-        steps: this.steps.map(({ runner, flow }) => ({
-          runner: {
-            className: Object.getPrototypeOf(runner).constructor.name,
-            config: 'config' in runner ? runner.config : undefined,
-          },
-          flow: {
-            className: Object.getPrototypeOf(flow).constructor.name,
-            config: 'config' in flow ? flow.config : undefined,
-          },
-        })),
         tmpPath: TMP_PATH,
       },
       null,
