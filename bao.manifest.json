@@ -1,0 +1,52 @@
+{
+  "name": "bao",
+  "dependencies": {},
+  "flows": {},
+  "runners": [
+    [
+      {
+        "name": "GenericBuilder",
+        "description": "A generic build runner.",
+        "version": "1.0.0"
+      },
+      {
+        "folderPath": "images",
+        "destPath": "images",
+        "name": "FolderFlow",
+        "description": "A flow that processes files in a folder.",
+        "id": "FolderFlow:images"
+      }
+    ],
+    [
+      {
+        "name": "GenericBuilder",
+        "description": "A generic build runner.",
+        "version": "1.0.0"
+      },
+      {
+        "folderPath": "fonts",
+        "destPath": "fonts",
+        "name": "FolderFlow",
+        "description": "A flow that processes files in a folder.",
+        "id": "FolderFlow:fonts"
+      }
+    ],
+    [
+      {
+        "config": {
+          "isFile": true
+        },
+        "name": "GenericBuilder",
+        "description": "A generic build runner.",
+        "version": "1.0.0"
+      },
+      {
+        "filePath": "favicon.ico",
+        "destPath": "favicon.ico",
+        "name": "FileFlow",
+        "description": "A flow that processes file",
+        "id": "FileFlow:favicon.ico"
+      }
+    ]
+  ]
+}
