@@ -31,6 +31,8 @@ class FolderFlow implements Flow {
   async execute(): Promise<
     [string[] | string | undefined, string[] | string | undefined]
   > {
+    await mkdir(this.config.dest, { recursive: true });
+    
     if (!this.config.expand) {
       return [this.config.source, this.config.dest];
     }
