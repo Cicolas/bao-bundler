@@ -217,7 +217,7 @@ class Project {
     if (!(await manifestFile.exists())) {
       throw new Error('manifestFileNotfound');
     }
-    const manifest = require('./bao.manifest.json');
+    const manifest = await manifestFile.json();
 
     manifest.steps = manifest.steps.map((s: any) => {
       return {

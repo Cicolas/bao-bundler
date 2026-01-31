@@ -1,11 +1,27 @@
 {
   "name": "bao-bundler",
-  "module": "index.ts",
+  "version": "0.1.0",
+  "description": "Bao Bundler is a simple, code-driven, and manifest-aware asset bundler for web projects, built with Bun.",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
   "peerDependencies": {
     "typescript": "^5"
-  }
+  },
+  "keywords": [
+    "bun",
+    "bundler",
+    "assets"
+  ],
+  "license": "MIT"
 }
