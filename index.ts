@@ -7,8 +7,6 @@ const ASSETS_PATH = 'assets';
 const BUILD_PATH = 'build';
 
 interface Flow {
-  name: string;
-  description: string;
   id: string;
 
   execute(): Promise<
@@ -17,8 +15,6 @@ interface Flow {
 }
 
 class FolderFlow implements Flow {
-  name: string = 'FolderFlow';
-  description: string = 'A flow that processes files in a folder.';
   id!: string;
 
   constructor(
@@ -26,6 +22,7 @@ class FolderFlow implements Flow {
       source: string;
       dest: string;
       expand?: boolean;
+      extension?: string;
     },
   ) {
     this.id = `FolderFlow:${this.config.source}`;
@@ -38,7 +35,14 @@ class FolderFlow implements Flow {
       return [this.config.source, this.config.dest];
     }
 
-    const findLines = await $`find ${this.config.source} -type f`.lines();
+    let findLines!: AsyncIterable<string>;
+    if (!this.config.extension) {
+      findLines = await $`find ${this.config.source} -type f`.lines();
+    } else {
+      findLines =
+        await $`find ${this.config.source} -type f -name "*.${this.config.extension}"`.lines();
+    }
+
     const files = [];
     for await (const line of findLines) {
       if (!line) continue;
@@ -50,8 +54,6 @@ class FolderFlow implements Flow {
 }
 
 class FileFlow implements Flow {
-  name: string = 'FileFlow';
-  description: string = 'A flow that processes file';
   id!: string;
 
   constructor(
@@ -69,11 +71,11 @@ class FileFlow implements Flow {
 }
 
 class VoidFileFlow implements Flow {
-  name: string = 'VoidFileFlow';
-  description: string = 'A flow that does nothing.';
-  id: string = 'VoidFileFlow';
+  id!: string;
 
-  constructor(public filePath: string) {}
+  constructor(public filePath: string) {
+    this.id = `VoidFileFlow:${filePath}`;
+  }
 
   async execute(): Promise<[string, undefined]> {
     return [this.filePath, undefined];
@@ -81,10 +83,6 @@ class VoidFileFlow implements Flow {
 }
 
 interface Runner {
-  name: string;
-  description: string;
-  version: string;
-
   run: (
     source: string | string[] | undefined,
     dest: string | string[] | undefined,
@@ -92,10 +90,6 @@ interface Runner {
 }
 
 class CopyRunner implements Runner {
-  name: string = 'GenericBuilder';
-  description: string = 'A generic build runner.';
-  version: string = '1.0.0';
-
   constructor() {}
 
   async run(
@@ -206,7 +200,9 @@ class Project {
       ),
     );
 
-    console.log(`Running runner: ${runner.name}`);
+    console.log(
+      `Running runner: ${Object.getPrototypeOf(runner).constructor.name}`,
+    );
     await runner.run(files, destPath);
   }
 
