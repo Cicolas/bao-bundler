@@ -1,6 +1,7 @@
-![Bao Bundler Logo](logo.png)
-
 # Bao Bundler
+<p align="center">
+   <img src="logo.png" alt="Descrição" width="300">
+</p>
 
 Bao Bundler is a simple, code-driven asset bundler for web projects, built with Bun. It provides a flexible way to define and manage asset processing pipelines by combining `Flows` (which define *what* to bundle) and `Runners` (which define *how* to process them).
 
