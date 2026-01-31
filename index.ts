@@ -190,6 +190,8 @@ class Project {
     await $`mkdir -p ../${BUILD_PATH}`;
     await $`cp -r ${BUILD_PATH}/* ../${BUILD_PATH}`;
     process.chdir('./..');
+
+    await this.saveToManifest();
   }
 
   async executeRunner(runner: Runner, flow: Flow): Promise<void> {

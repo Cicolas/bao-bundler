@@ -43,4 +43,3 @@ try {
 }
 
 await project.build();
-project.saveToManifest();
