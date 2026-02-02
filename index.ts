@@ -25,14 +25,16 @@ class FolderFlow implements Flow {
       extension?: string;
     },
   ) {
-    this.id = `FolderFlow:${this.config.source}\#.${config.extension}`;
+    this.id = config.extension
+      ? `FolderFlow:${this.config.source}#${this.config.extension}`
+      : `FolderFlow:${this.config.source}`;
   }
 
   async execute(): Promise<
     [string[] | string | undefined, string[] | string | undefined]
   > {
     await mkdir(this.config.dest, { recursive: true });
-    
+
     if (!this.config.expand) {
       return [this.config.source, this.config.dest];
     }
@@ -144,25 +146,24 @@ class Project {
   constructor(
     public name: string,
     private steps: { runner: Runner; flow: Flow }[] = [],
-  ) {
-  }
+  ) {}
 
   async build(): Promise<void> {
     console.log(`Building project: ${this.name}`);
     try {
       await this.loadFromManifest();
+      console.log(this);
     } catch (err) {
-      if (err instanceof Error && err.message === "manifestFileNotfound") {
+      if (err instanceof Error && err.message === 'manifestFileNotfound') {
         console.warn('no manifest file were found');
       } else {
         throw err;
       }
     }
 
-
     await rm(`../${TMP_PATH}`, {
       recursive: true,
-      force: true
+      force: true,
     });
     await mkdir(`${TMP_PATH}/${ASSETS_PATH}`, {
       recursive: true,
@@ -174,13 +175,13 @@ class Project {
     process.chdir(TMP_PATH);
 
     for (const { runner, flow } of this.steps) {
-      await this.executeRunner(runner, flow);
+      await this.executeStep(runner, flow);
     }
-    
+
     process.chdir('./..');
     await rm(`${BUILD_PATH}`, {
       recursive: true,
-      force: true
+      force: true,
     });
     await mkdir(`${BUILD_PATH}`);
     await cp(`${TMP_PATH}/${BUILD_PATH}`, `${BUILD_PATH}/`, {
@@ -190,22 +191,29 @@ class Project {
     await this.saveToManifest();
   }
 
-  async executeRunner(runner: Runner, flow: Flow): Promise<void> {
+  async executeStep(runner: Runner, flow: Flow): Promise<void> {
     const id = flow.id;
     console.log(`Executing flow: ${id}`);
     const [files, destPath] = await flow.execute();
 
-    const filesArray = Array.isArray(files) ? files : files ? [files] : [];
-    this.flows[id] = new Set(
-      [...(this.flows[id] ?? []), ...filesArray].filter((f) =>
-        filesArray.includes(f),
-      ),
-    );
-
-    console.log(
-      `Running runner: ${Object.getPrototypeOf(runner).constructor.name}`,
-    );
-    await runner.run(files, destPath);
+    if (Array.isArray(files)) {
+      let filesArray = files;
+      this.flows[id] = new Set(
+        [...(this.flows[id] ?? []), ...filesArray].filter((f) =>
+          filesArray.includes(f),
+        ),
+      );
+      filesArray = Array.from(this.flows[id]);
+      console.log(
+        `Running runner: ${Object.getPrototypeOf(runner).constructor.name}`,
+      );
+      await runner.run(filesArray, destPath);
+    } else {
+      console.log(
+        `Running runner: ${Object.getPrototypeOf(runner).constructor.name}`,
+      );
+      await runner.run(files, destPath);
+    }
   }
 
   async loadFromManifest() {

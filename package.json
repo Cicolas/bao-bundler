@@ -1,6 +1,6 @@
 {
   "name": "bao-bundler",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Bao Bundler is a simple, code-driven, and manifest-aware asset bundler for web projects, built with Bun.",
   "main": "dist/index.js",
   "module": "dist/index.js",
