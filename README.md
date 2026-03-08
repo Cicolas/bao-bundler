@@ -13,6 +13,7 @@ You define your build process imperatively in code, which allows for maximum fle
 *   **Flow**: Defines the source of the assets (what files or folders to process).
     *   `FolderFlow`: Process files within a folder.
     *   `FileFlow`: Process a single file.
+    *   `VoidFlow`: Process a file without producing output.
 *   **Runner**: Defines the action to be performed on the assets.
     *   `CopyRunner`: Copies files from source to destination.
 
@@ -28,11 +29,10 @@ Bao Bundler is used by defining your build steps in a script and executing it wi
 
 ### Build Script (`build.ts`)
 
-Here’s an example of a build script. It creates a new project and defines a series of steps to copy assets from an `assets` directory to a `build` directory.
-
 ```typescript
-// build.ts
-import { Project, CopyRunner, FolderFlow, FileFlow } from 'bao-bundler';
+import { Project } from 'bao-bundler';
+import { FolderFlow, FileFlow } from 'bao-bundler/flows';
+import { CopyRunner } from 'bao-bundler/runners';
 
 await new Project('bao', [
   {
@@ -64,32 +64,42 @@ console.log('Build complete!');
 
 ### Running the Build
 
-To execute the build script, run:
 ```bash
 bun run build.ts
 ```
 
+## Verbosity
+
+Control log output via the `BAO_VERBOSITY` environment variable:
+
+```bash
+BAO_VERBOSITY=DEBUG bun run build.ts  # default — all logs
+BAO_VERBOSITY=INFO  bun run build.ts  # info, warn, error
+BAO_VERBOSITY=WARN  bun run build.ts  # warn and error only
+BAO_VERBOSITY=ERROR bun run build.ts  # errors only
+```
+
 ## Extending Bao Bundler
 
-You can create custom `Flows` and `Runners` to extend Bao's functionality.
+You can create custom `Flows` and `Runners` by implementing the exported interfaces.
 
 ### Creating a Custom Flow
 
-A `Flow` must have an async `get()` method that returns the source and destination paths. Here is a conceptual example of a `GlobFlow`.
-
 ```typescript
-// flows/GlobFlow.ts
-import { type Flow, type FlowOutput } from 'bao-bundler'; // Types are conceptual
+import { type Flow } from 'bao-bundler';
 import { glob } from 'glob';
 
 export class GlobFlow implements Flow {
-  constructor(private config: { pattern: string; dest: string }) {}
+  id: string;
+  constructor(private config: { pattern: string; dest: string }) {
+    this.id = `GlobFlow:${config.pattern}`;
+  }
 
-  async get(): Promise<FlowOutput> {
+  async execute() {
     const files = await glob(this.config.pattern);
     return {
-      source: files,
-      dest: this.config.dest,
+      source: { path: files },
+      dest: { path: this.config.dest },
     };
   }
 }
@@ -97,17 +107,14 @@ export class GlobFlow implements Flow {
 
 ### Creating a Custom Runner
 
-A `Runner` must have an async `run()` method. Here is a conceptual example of a `SassRunner`.
-
 ```typescript
-// runners/SassRunner.ts
-import { type Runner } from 'bao-bundler'; // Type is conceptual
+import { type Runner } from 'bao-bundler';
 import sass from 'sass';
 
 export class SassRunner implements Runner {
-  async run(source: string, dest: string): Promise<void> {
-    const result = sass.compile(source);
-    await Bun.write(dest, result.css);
+  async run(input) {
+    const result = sass.compile(input.source.path as string);
+    await Bun.write(input.dest.path as string, result.css);
   }
 }
 ```
@@ -123,8 +130,6 @@ The `project.build()` method:
 
 ### `new Project(name, steps)`
 
-Creates a new project instance.
-
 *   `name`: `string` - The name of your project.
 *   `steps`: `{ runner: Runner; flow: Flow }[]` - An array of step objects that define the build process.
 
@@ -134,17 +139,22 @@ Asynchronously runs the entire build process.
 
 ---
 
-### Flows
+### Flows — `bao-bundler/flows`
 
 #### `new FolderFlow(config)`
-*   `config`: `{ source: string; dest: string; expand?: boolean }`
+*   `config`: `{ source: string; dest: string; expand?: boolean; extension?: string }`
+*   When `expand` is true, resolves individual files instead of the folder path. Use `extension` to filter by file type.
 
 #### `new FileFlow(config)`
 *   `config`: `{ source: string; dest: string }`
 
+#### `new VoidFlow(config)`
+*   `config`: `{ filePath: string }`
+*   Processes a file without writing it to the output.
+
 ---
 
-### Runners
+### Runners — `bao-bundler/runners`
 
 #### `new CopyRunner()`
-Copies files or directories from a source to a destination.
+Copies files or directories from source to destination.
