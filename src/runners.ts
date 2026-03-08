@@ -1,7 +1,10 @@
+/**
+ * @module Runners
+ */
 import { cp } from 'node:fs/promises';
 import path from 'node:path';
 import { Logger } from './_logger';
-import type { Runner, FlowOutput } from './_types';
+import type { Runner, FlowOutput } from './';
 
 export type { Runner };
 

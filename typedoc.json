@@ -1,0 +1,6 @@
+{
+  "entryPoints": ["src/index.ts", "src/flows.ts", "src/runners.ts"],
+  "entryPointStrategy": "resolve",
+  "out": "docs",
+  "readme": "README.md"
+}

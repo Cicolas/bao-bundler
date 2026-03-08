@@ -1,8 +1,26 @@
+/**
+ * @module Types
+ */
 import { cp, mkdir, rm } from 'node:fs/promises';
 import { Logger } from './_logger';
-import type { Flow, Runner } from './_types';
 
-export type { Flow, Runner };
+export type FlowData = {
+  path: string | string[];
+};
+
+export type FlowOutput = {
+  source?: FlowData;
+  dest?: FlowData;
+};
+
+export interface Flow {
+  id: string;
+  execute(): Promise<FlowOutput>;
+}
+
+export interface Runner {
+  run: (input: FlowOutput) => Promise<void>;
+}
 
 const TMP_PATH = './.bao_tmp';
 const ASSETS_PATH = 'assets';
@@ -94,7 +112,10 @@ class Project {
         name: this.name,
         dependencies: this.dependencies,
         flows: Object.fromEntries(
-          Object.entries(this.flows).map(([key, value]) => [key, Array.from(value)]),
+          Object.entries(this.flows).map(([key, value]) => [
+            key,
+            Array.from(value),
+          ]),
         ),
         tmpPath: TMP_PATH,
       },

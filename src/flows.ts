@@ -1,6 +1,9 @@
+/**
+ * @module Flows
+ */
 import { $ } from 'bun';
 import { mkdir } from 'node:fs/promises';
-import type { Flow, FlowOutput } from './_types';
+import type { Flow, FlowOutput } from './index';
 
 export type { Flow, FlowOutput };
 
@@ -34,7 +37,8 @@ class FolderFlow implements Flow {
     if (!this.config.extension) {
       findLines = $`find ${this.config.source} -type f`.lines();
     } else {
-      findLines = $`find ${this.config.source} -type f -name "*.${this.config.extension}"`.lines();
+      findLines =
+        $`find ${this.config.source} -type f -name "*.${this.config.extension}"`.lines();
     }
 
     const files = [];
