@@ -152,7 +152,6 @@ class Project {
     console.log(`Building project: ${this.name}`);
     try {
       await this.loadFromManifest();
-      console.log(this);
     } catch (err) {
       if (err instanceof Error && err.message === 'manifestFileNotfound') {
         console.warn('no manifest file were found');
