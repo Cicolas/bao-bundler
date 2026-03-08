@@ -1,4 +1,6 @@
-import { Project, CopyRunner, FolderFlow, FileFlow } from '..';
+import { FolderFlow, FileFlow } from '../src/flows';
+import { CopyRunner } from '../src/runners';
+import { Project } from '../src';
 
 await new Project('bao', [
   {

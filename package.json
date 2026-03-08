@@ -6,6 +6,20 @@
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./flows": {
+      "import": "./dist/flows.js",
+      "types": "./dist/flows.d.ts"
+    },
+    "./runners": {
+      "import": "./dist/runners.js",
+      "types": "./dist/runners.d.ts"
+    }
+  },
   "files": [
     "dist"
   ],
