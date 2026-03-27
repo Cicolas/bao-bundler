@@ -4,6 +4,9 @@
   "workspaces": {
     "": {
       "name": "bao-bundler",
+      "dependencies": {
+        "bao-bundler": "^0.2.2",
+      },
       "devDependencies": {
         "@types/bun": "latest",
         "typedoc": "^0.28.17",
@@ -37,6 +40,8 @@
     "argparse": ["argparse@2.0.1", "", {}, "sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q=="],
 
     "balanced-match": ["balanced-match@1.0.2", "", {}, "sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw=="],
+
+    "bao-bundler": ["bao-bundler@0.2.2", "", { "peerDependencies": { "typescript": "^5" } }, "sha512-6lV9tQx42lDeZinjQpFqtPNena5zxTuxP+KIXJ8uvkaevYlHx3HmDAYgj2qycOLdsV/THEhPJ6KaEc1ePSyhYQ=="],
 
     "brace-expansion": ["brace-expansion@2.0.2", "", { "dependencies": { "balanced-match": "^1.0.0" } }, "sha512-Jt0vHyM+jmUBqojB7E1NIYadt0vI0Qxjxd2TErW94wDz+E2LAm5vKMXXwg6ZZBTHPuUlDgQHKXvjGBdfcF1ZDQ=="],
 

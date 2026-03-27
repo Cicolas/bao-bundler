@@ -39,5 +39,8 @@
     "bundler",
     "assets"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "bao-bundler": "^0.2.2"
+  }
 }

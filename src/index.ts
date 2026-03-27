@@ -4,6 +4,8 @@
 import { cp, mkdir, rm } from 'node:fs/promises';
 import { Logger } from './_logger';
 
+export { BaoLogger } from './_logger';
+
 export type FlowData = {
   path: string | string[];
 };
