@@ -3,8 +3,8 @@ type VerbosityLevel = keyof typeof VERBOSITY_LEVELS;
 
 const LEVEL_COLORS: Record<VerbosityLevel, string> = {
   DEBUG: '\x1b[90m', // gray
-  INFO: '\x1b[36m',  // cyan
-  WARN: '\x1b[33m',  // yellow
+  INFO: '\x1b[36m', // cyan
+  WARN: '\x1b[33m', // yellow
   ERROR: '\x1b[31m', // red
 };
 const RESET = '\x1b[0m';
@@ -19,11 +19,23 @@ export const Logger = {
     if (VERBOSITY_LEVELS[level] >= VERBOSITY_LEVELS[this.verbosityLevel]) {
       const color = LEVEL_COLORS[level];
       const colorMsg = level === 'INFO' ? RESET : color;
-      console.log(`${color}${level}${RESET}: ${colorMsg}[Bao Bundler] ${args}${RESET}`);
+      console.log(
+        `${color}${level}${RESET}: ${colorMsg}[Bao Bundler] ${args}${RESET}`,
+      );
     }
   },
-  info(...args: any[]) { this._log('INFO', ...args); },
-  warn(...args: any[]) { this._log('WARN', ...args); },
-  error(...args: any[]) { this._log('ERROR', ...args); },
-  debug(...args: any[]) { this._log('DEBUG', ...args); },
+  info(...args: any[]) {
+    this._log('INFO', ...args);
+  },
+  warn(...args: any[]) {
+    this._log('WARN', ...args);
+  },
+  error(...args: any[]) {
+    this._log('ERROR', ...args);
+  },
+  debug(...args: any[]) {
+    this._log('DEBUG', ...args);
+  },
 };
+
+export { Logger as BaoLogger };
