@@ -1,6 +1,6 @@
 {
   "name": "bao-bundler",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Bao Bundler is a simple, code-driven, and manifest-aware asset bundler for web projects, built with Bun.",
   "main": "dist/index.js",
   "module": "dist/index.js",
@@ -39,8 +39,5 @@
     "bundler",
     "assets"
   ],
-  "license": "MIT",
-  "dependencies": {
-    "bao-bundler": "^0.2.2"
-  }
+  "license": "MIT"
 }

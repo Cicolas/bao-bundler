@@ -1,11 +1,40 @@
 /**
  * @module Flows
  */
-import { $ } from 'bun';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, readdir } from 'node:fs/promises';
+import { join } from 'node:path';
 import type { Flow, FlowOutput } from './index';
 
 export type { Flow, FlowOutput };
+
+async function findFiles(source: string, extension?: string): Promise<string[]> {
+  if (typeof Bun !== 'undefined') {
+    const findLines = extension
+      ? Bun.$`find ${source} -type f -name ${`*.${extension}`}`.lines()
+      : Bun.$`find ${source} -type f`.lines();
+
+    const files = [];
+    for await (const line of findLines) {
+      if (!line) continue;
+      files.push(line);
+    }
+    return files;
+  }
+
+  const files: string[] = [];
+  for (const entry of await readdir(source, { withFileTypes: true })) {
+    const path = join(source, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...(await findFiles(path, extension)));
+      continue;
+    }
+
+    if (entry.isFile() && (!extension || entry.name.endsWith(`.${extension}`))) {
+      files.push(path);
+    }
+  }
+  return files;
+}
 
 class FolderFlow implements Flow {
   id!: string;
@@ -33,19 +62,7 @@ class FolderFlow implements Flow {
       };
     }
 
-    let findLines!: AsyncIterable<string>;
-    if (!this.config.extension) {
-      findLines = $`find ${this.config.source} -type f`.lines();
-    } else {
-      findLines =
-        $`find ${this.config.source} -type f -name "*.${this.config.extension}"`.lines();
-    }
-
-    const files = [];
-    for await (const line of findLines) {
-      if (!line) continue;
-      files.push(line);
-    }
+    const files = await findFiles(this.config.source, this.config.extension);
     return {
       source: { path: files },
       dest: { path: this.config.dest },
