@@ -3,6 +3,7 @@
  */
 import { mkdir, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
+import { Logger } from './_logger';
 import type { Flow, FlowOutput } from './index';
 
 export type { Flow, FlowOutput };
@@ -53,9 +54,11 @@ class FolderFlow implements Flow {
   }
 
   async execute(): Promise<FlowOutput> {
+    Logger.debug(`Preparing folder flow from ${this.config.source} to ${this.config.dest}`);
     await mkdir(this.config.dest, { recursive: true });
 
     if (!this.config.expand) {
+      Logger.debug(`Using folder source: ${this.config.source}`);
       return {
         source: { path: this.config.source },
         dest: { path: this.config.dest },
@@ -63,6 +66,11 @@ class FolderFlow implements Flow {
     }
 
     const files = await findFiles(this.config.source, this.config.extension);
+    Logger.debug(
+      `Expanded ${this.config.source} into ${files.length} file${files.length === 1 ? '' : 's'}${
+        this.config.extension ? ` matching .${this.config.extension}` : ''
+      }`,
+    );
     return {
       source: { path: files },
       dest: { path: this.config.dest },
@@ -78,6 +86,7 @@ class FileFlow implements Flow {
   }
 
   async execute(): Promise<FlowOutput> {
+    Logger.debug(`Using file source: ${this.config.source} to ${this.config.dest}`);
     return {
       source: { path: this.config.source },
       dest: { path: this.config.dest },
@@ -93,6 +102,7 @@ class VoidFileFlow implements Flow {
   }
 
   async execute(): Promise<FlowOutput> {
+    Logger.debug(`Using void file source: ${this.config.filePath}`);
     return {
       source: { path: this.config.filePath },
     };

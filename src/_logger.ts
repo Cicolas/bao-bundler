@@ -11,8 +11,10 @@ const RESET = '\x1b[0m';
 
 export const Logger = {
   verbosityLevel: (() => {
-    const val = process.env.BAO_VERBOSITY?.toUpperCase() ?? 'DEBUG';
-    return (val in VERBOSITY_LEVELS ? val : 'DEBUG') as VerbosityLevel;
+    const val =
+      process.env.BAO_VERBOSITY?.toUpperCase() ??
+      (process.argv.includes('--verbose') ? 'DEBUG' : 'INFO');
+    return (val in VERBOSITY_LEVELS ? val : 'INFO') as VerbosityLevel;
   })(),
 
   _log(level: VerbosityLevel, ...args: any[]) {

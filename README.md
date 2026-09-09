@@ -70,10 +70,17 @@ bun run build.ts
 
 ## Verbosity
 
-Control log output via the `BAO_VERBOSITY` environment variable:
+Pass `--verbose` to enable debug logs:
 
 ```bash
-BAO_VERBOSITY=DEBUG bun run build.ts  # default — all logs
+bun run build.ts --verbose
+```
+
+Without this flag, Bao Bundler logs at `INFO` level. For finer control, set
+`BAO_VERBOSITY`; this environment variable takes precedence over `--verbose`:
+
+```bash
+BAO_VERBOSITY=DEBUG bun run build.ts  # all logs
 BAO_VERBOSITY=INFO  bun run build.ts  # info, warn, error
 BAO_VERBOSITY=WARN  bun run build.ts  # warn and error only
 BAO_VERBOSITY=ERROR bun run build.ts  # errors only
