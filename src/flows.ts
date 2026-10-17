@@ -110,3 +110,54 @@ class VoidFileFlow implements Flow {
 }
 
 export { FolderFlow, FileFlow, VoidFileFlow as VoidFlow };
+
+export { FetchFlow, GitFlow, NpmFlow } from './remote-flows';
+export type {
+  FetchFlowConfig,
+  GitFlowConfig,
+  NpmFlowConfig,
+} from './remote-flows';
+
+/** Portable glob matching with optional exclusion patterns. */
+export class GlobFlow implements Flow {
+  readonly id: string;
+  constructor(
+    private config: {
+      pattern: string | string[];
+      dest: string;
+      cwd?: string;
+      dot?: boolean;
+    },
+  ) {
+    this.id = `GlobFlow:${JSON.stringify(config)}`;
+  }
+  async execute(): Promise<FlowOutput> {
+    const patterns =
+      typeof this.config.pattern === 'string'
+        ? [this.config.pattern]
+        : this.config.pattern;
+    const include = patterns.filter((pattern) => !pattern.startsWith('!'));
+    const exclude = patterns
+      .filter((pattern) => pattern.startsWith('!'))
+      .map((pattern) => new Bun.Glob(pattern.slice(1)));
+    if (!include.length)
+      throw new Error('GlobFlow requires an inclusion pattern');
+    const files = new Set<string>();
+    for (const pattern of include) {
+      for await (const file of new Bun.Glob(pattern).scan({
+        cwd: this.config.cwd ?? '.',
+        dot: this.config.dot ?? false,
+        onlyFiles: true,
+        followSymlinks: false,
+      })) {
+        if (!exclude.some((glob) => glob.match(file)))
+          files.add(this.config.cwd ? join(this.config.cwd, file) : file);
+      }
+    }
+    await mkdir(this.config.dest, { recursive: true });
+    return {
+      source: { path: [...files].sort() },
+      dest: { path: this.config.dest },
+    };
+  }
+}

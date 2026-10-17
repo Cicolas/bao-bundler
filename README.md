@@ -14,10 +14,14 @@ You define your build process imperatively in code, which allows for maximum fle
     *   `FolderFlow`: Process files within a folder.
     *   `FileFlow`: Process a single file.
     *   `VoidFlow`: Process a file without producing output.
+    *   `GlobFlow`, `FetchFlow`, `GitFlow`, and `NpmFlow`: [glob and remote sources](docs/flows.md).
 *   **Runner**: Defines the action to be performed on the assets.
     *   `CopyRunner`: Copies files from source to destination.
+    *   Bundle, minify, Sass, exec, image, hash, template, and type check: [built-in runners](RUNNERS.md).
 
 ## Installation
+
+Requires Bun 1.4 or later.
 
 ```bash
 bun add bao-bundler
@@ -93,20 +97,16 @@ You can create custom `Flows` and `Runners` by implementing the exported interfa
 ### Creating a Custom Flow
 
 ```typescript
-import { type Flow } from 'bao-bundler';
-import { glob } from 'glob';
+import type { Flow, FlowOutput } from 'bao-bundler';
 
-export class GlobFlow implements Flow {
-  id: string;
-  constructor(private config: { pattern: string; dest: string }) {
-    this.id = `GlobFlow:${config.pattern}`;
-  }
+class GeneratedFlow implements Flow {
+  id = 'GeneratedFlow:config';
 
-  async execute() {
-    const files = await glob(this.config.pattern);
+  async execute(): Promise<FlowOutput> {
+    await Bun.write('generated.json', JSON.stringify({ mode: 'production' }));
     return {
-      source: { path: files },
-      dest: { path: this.config.dest },
+      source: { path: 'generated.json' },
+      dest: { path: 'build/config.json' },
     };
   }
 }
@@ -115,13 +115,14 @@ export class GlobFlow implements Flow {
 ### Creating a Custom Runner
 
 ```typescript
-import { type Runner } from 'bao-bundler';
-import sass from 'sass';
+import type { Runner, FlowOutput } from 'bao-bundler';
 
-export class SassRunner implements Runner {
-  async run(input) {
-    const result = sass.compile(input.source.path as string);
-    await Bun.write(input.dest.path as string, result.css);
+class UppercaseRunner implements Runner {
+  async run(input: FlowOutput): Promise<void> {
+    if (typeof input.source?.path !== 'string' || typeof input.dest?.path !== 'string') {
+      throw new Error('UppercaseRunner requires single source and destination files');
+    }
+    await Bun.write(input.dest.path, (await Bun.file(input.source.path).text()).toUpperCase());
   }
 }
 ```
@@ -131,7 +132,7 @@ export class SassRunner implements Runner {
 The `project.build()` method:
 1.  Prepares a temporary directory for a clean, isolated build.
 2.  Executes each `step` in order, letting the `flow` provide paths and the `runner` process the files.
-3.  Moves the final artifacts from the temporary directory to your project's output directory.
+3.  Publishes the output and manifest with rollback and interruption recovery, preserving the previous successful build on failure. See [build safety](docs/build-safety.md).
 
 ## API Reference
 
@@ -165,3 +166,16 @@ Asynchronously runs the entire build process.
 
 #### `new CopyRunner()`
 Copies files or directories from source to destination.
+
+
+## Development
+
+```bash
+bun install
+bun test
+bun run build
+```
+
+Optional runner integrations are development dependencies so the full test suite
+exercises real compilers, template engines, and image transforms. Consumers only
+need to install the integrations they use.

@@ -35,3 +35,5 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 .npmrc
 .bao_tmp/
+.bao_cache
+.workforest/
