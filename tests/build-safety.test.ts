@@ -194,3 +194,42 @@ describe('transactional Project builds', () => {
     expect(process.cwd()).toBe(root);
   });
 });
+
+test('preserves current source ordering for paired destinations after new files appear', async () => {
+  await writeFile(join(root, 'assets/a.txt'), 'A');
+  await writeFile(join(root, 'assets/b.txt'), 'B');
+  let files = ['b.txt'];
+  const pairedFlow: Flow = {
+    id: 'paired',
+    async execute() {
+      return {
+        source: { path: files.map(file => `assets/${file}`) },
+        dest: { path: files.map(file => `build/${file}`) },
+      };
+    },
+  };
+  const build = () => new Project('paired', [{ flow: pairedFlow, runner: new CopyRunner() }]).build();
+  await build();
+  files = ['a.txt', 'b.txt'];
+  await build();
+  expect(await content('build/a.txt')).toBe('A');
+  expect(await content('build/b.txt')).toBe('B');
+  const manifest = JSON.parse(await content('bao.manifest.json'));
+  expect(manifest.flows.paired).toEqual(['assets/a.txt', 'assets/b.txt']);
+});
+
+
+test('preserves repeated sources when explicitly paired with different destinations', async () => {
+  const pairedFlow: Flow = {
+    id: 'repeat-paired',
+    async execute() {
+      return {
+        source: { path: ['assets/file.txt', 'assets/file.txt'] },
+        dest: { path: ['build/a.txt', 'build/b.txt'] },
+      };
+    },
+  };
+  await new Project('paired', [{ flow: pairedFlow, runner: new CopyRunner() }]).build();
+  expect(await content('build/a.txt')).toBe('old');
+  expect(await content('build/b.txt')).toBe('old');
+});

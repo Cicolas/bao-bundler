@@ -89,12 +89,8 @@ class Project {
 
     if (Array.isArray(flowOutput.source?.path)) {
       const filesArray = flowOutput.source.path;
-      this.flows[id] = new Set(
-        [...(this.flows[id] ?? []), ...filesArray].filter((f) =>
-          filesArray.includes(f),
-        ),
-      );
-      flowOutput.source.path = Array.from(this.flows[id]);
+      // Keep current ordering: destination arrays are paired by index.
+      this.flows[id] = new Set(filesArray);
     }
 
     await runner.run(flowOutput);
