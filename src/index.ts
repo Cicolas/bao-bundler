@@ -1,7 +1,7 @@
 /**
  * @module Types
  */
-import { cp, mkdir, rm } from 'node:fs/promises';
+import { BuildTransaction } from './build-transaction';
 import { Logger } from './_logger';
 
 export { BaoLogger } from './_logger';
@@ -15,9 +15,15 @@ export type FlowOutput = {
   dest?: FlowData;
 };
 
+export type FlowContext = {
+  projectRoot: string;
+  cachePath: string;
+  dependencies: Record<string, string>;
+};
+
 export interface Flow {
   id: string;
-  execute(): Promise<FlowOutput>;
+  execute(context?: FlowContext): Promise<FlowOutput>;
 }
 
 export interface Runner {
@@ -25,8 +31,6 @@ export interface Runner {
 }
 
 const TMP_PATH = './.bao_tmp';
-const ASSETS_PATH = 'assets';
-const BUILD_PATH = 'build';
 
 class Project {
   dependencies: Record<string, string> = {};
@@ -43,42 +47,45 @@ class Project {
   ) {}
 
   async build(): Promise<void> {
-    Logger.info(`Building project: ${this.name}`);
+    const transaction = await BuildTransaction.create(this.config);
     try {
-      await this.loadFromManifest();
-    } catch (err) {
-      if (err instanceof Error && err.message === 'manifestFileNotfound') {
-        Logger.warn('no manifest file were found');
-      } else {
-        throw err;
+      Logger.info(`Building project: ${this.name}`);
+      await transaction.recover();
+      try {
+        await this.loadFromManifest();
+      } catch (err) {
+        if (err instanceof Error && err.message === 'manifestFileNotfound') {
+          Logger.warn('no manifest file were found');
+        } else {
+          throw err;
+        }
       }
+      const context: FlowContext = {
+        projectRoot: transaction.root,
+        cachePath: transaction.cache,
+        dependencies: this.dependencies,
+      };
+      await transaction.run(
+        async () => {
+          for (const { runner, flow } of this.steps) {
+            await this.executeStep(runner, flow, context);
+          }
+        },
+        (path) => this.saveToManifest(path),
+      );
+    } finally {
+      transaction.release();
     }
-    const buildPath = this.config?.buildPath ?? BUILD_PATH;
-    const assetsPath = this.config?.assetsPath ?? ASSETS_PATH;
-    const tmpPath = this.config?.tmpPath ?? TMP_PATH;
-
-    await rm(`../${tmpPath}`, { recursive: true, force: true });
-    await mkdir(`${tmpPath}/${assetsPath}`, { recursive: true });
-    await cp(`${assetsPath}`, `${tmpPath}/${assetsPath}/`, { recursive: true });
-
-    process.chdir(tmpPath);
-
-    for (const { runner, flow } of this.steps) {
-      await this.executeStep(runner, flow);
-    }
-
-    process.chdir('./..');
-    await rm(`${buildPath}`, { recursive: true, force: true });
-    await mkdir(`${buildPath}`);
-    await cp(`${tmpPath}/${buildPath}`, `${buildPath}/`, { recursive: true });
-
-    await this.saveToManifest();
   }
 
-  async executeStep(runner: Runner, flow: Flow): Promise<void> {
+  async executeStep(
+    runner: Runner,
+    flow: Flow,
+    context?: FlowContext,
+  ): Promise<void> {
     const id = flow.id;
     Logger.info(`Executing flow: ${id}`);
-    const flowOutput = await flow.execute();
+    const flowOutput = await flow.execute(context);
 
     if (Array.isArray(flowOutput.source?.path)) {
       const filesArray = flowOutput.source.path;
@@ -99,12 +106,17 @@ class Project {
       throw new Error('manifestFileNotfound');
     }
     const manifest = await manifestFile.json();
-    this.dependencies = manifest.dependencies;
-    this.flows = manifest.flows;
+    this.dependencies = manifest.dependencies ?? {};
+    this.flows = Object.fromEntries(
+      Object.entries(manifest.flows ?? {}).map(([id, paths]) => [
+        id,
+        new Set(paths as string[]),
+      ]),
+    );
   }
 
-  async saveToManifest(): Promise<void> {
-    const manifestFile = Bun.file('./bao.manifest.json');
+  async saveToManifest(path = './bao.manifest.json'): Promise<void> {
+    const manifestFile = Bun.file(path);
     await manifestFile.write(this.toJSON());
   }
 
@@ -119,7 +131,8 @@ class Project {
             Array.from(value),
           ]),
         ),
-        tmpPath: TMP_PATH,
+        tmpPath: this.config?.tmpPath ?? TMP_PATH,
+        status: 'success',
       },
       null,
       2,
